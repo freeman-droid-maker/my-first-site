@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>나의 첫 웹사이트</title>
+
+  <!-- 마그네틱 글로우 버튼 꾸미기(CSS) -->
+  <style>
+    /* 테두리 빛이 돌아가는 각도. 이 값을 0도 → 360도로 계속 바꿔서 빛이 돕니다. */
+    @property --glow-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+    @keyframes glow-spin { to { --glow-angle: 360deg; } }
+    @keyframes glow-ripple {
+      from { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+      to   { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    }
+
+    .button-area { margin: 28px 0; }
+
+    /* 버튼 전체 */
+    .glow-btn {
+      position: relative;
+      isolation: isolate;
+      display: inline-flex;
+      padding: 1px;
+      border: 0;
+      border-radius: 9999px;
+      background: transparent;
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.3s ease-out;
+    }
+    /* 키보드(Tab 키)로 선택했을 때 보이는 테두리 */
+    .glow-btn:focus-visible { outline: 2px solid #a5b4fc; outline-offset: 4px; }
+
+    /* 돌아가는 무지개 테두리 + 흐린 빛 번짐 */
+    .glow-ring, .glow-blur {
+      position: absolute;
+      border-radius: 9999px;
+      background: conic-gradient(from var(--glow-angle), #6d7cff, #ff6bd5, #33d6c7, #6d7cff);
+      animation: glow-spin 3s linear infinite;
+    }
+    .glow-ring { inset: 0; z-index: -1; }
+    .glow-blur { inset: -6px; z-index: -2; opacity: 0.4; filter: blur(16px); transition: opacity 0.3s; }
+    .glow-btn:hover .glow-blur { opacity: 0.9; }
+
+    /* 버튼 안쪽 검은 부분 */
+    .glow-inner {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
+      border-radius: 9999px;
+      background: #0a0a0a;
+      padding: 14px 28px;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    /* 마우스를 따라다니는 하이라이트 */
+    .glow-light {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(90px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.2), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .glow-btn:hover .glow-light { opacity: 1; }
+
+    /* 클릭할 때 퍼지는 물결 */
+    .glow-ripple {
+      position: absolute;
+      width: 160px;
+      height: 160px;
+      border-radius: 9999px;
+      background: rgba(255,255,255,0.3);
+      pointer-events: none;
+      animation: glow-ripple 0.7s ease-out forwards;
+    }
+
+    .glow-text { position: relative; }
+
+    /* "움직임 줄이기"를 켠 사용자에게는 애니메이션을 끕니다. */
+    @media (prefers-reduced-motion: reduce) {
+      .glow-ring, .glow-blur, .glow-ripple { animation: none; }
+    }
+
+    /* ===== 홀로그램 틸트 사진 (금문교) ===== */
+    /* --tx, --ty: 기울기(-1 ~ 1), --hyp: 얼마나 기울었는지(0 ~ 1). JavaScript가 계속 바꿔 줍니다. */
+    .holo-stage {
+      --tx: 0; --ty: 0; --hyp: 0;
+      --h1: 0; --h2: 55; --h3: 180; --h4: 285; /* 무지개 색상들 */
+      display: flex;
+      justify-content: center;
+      padding: 24px 0 32px;
+    }
+    .holo-scene {
+      position: relative;
+      width: 600px;
+      max-width: 100%;
+      perspective: 1800px; /* 3D 원근감 */
+    }
+    /* 사진 아래 은은한 색 그림자 */
+    .holo-shadow {
+      position: absolute;
+      left: 10%; right: 10%; bottom: -6%;
+      height: 12%;
+      border-radius: 50%;
+      background: hsl(var(--h2) 85% 55% / 0.35);
+      filter: blur(24px);
+      transform: translateX(calc(var(--tx) * -24px));
+    }
+    /* 기울어지는 카드 */
+    .holo-card {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      line-height: 0;
+      transform: rotateX(calc(var(--ty) * -10deg)) rotateY(calc(var(--tx) * 14deg));
+      box-shadow: 0 18px 45px rgba(0,0,0,0.25), 0 0 calc(var(--hyp) * 60px) hsl(var(--h2) 90% 62% / 0.4);
+    }
+    .holo-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      /* 사진이 카드 안에서 살짝 반대로 움직여 깊이감이 생깁니다. */
+      transform: scale(1.06) translate(calc(var(--tx) * -2%), calc(var(--ty) * -2%));
+    }
+    /* 무지개빛 테두리 */
+    .holo-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: linear-gradient(calc(135deg + var(--tx) * 60deg), hsl(var(--h1) 95% 70%), transparent 35%, transparent 65%, hsl(var(--h3) 95% 70%));
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+      pointer-events: none;
+    }
+    /* 무지개 홀로그램 반짝이(포일) */
+    .holo-foil {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 14 -8.6'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
+        repeating-linear-gradient(115deg, hsl(var(--h1) 100% 62%) 0%, hsl(var(--h2) 100% 62%) 4%, hsl(var(--h3) 100% 62%) 8%, hsl(var(--h4) 100% 62%) 12%, hsl(var(--h1) 100% 62%) 16%);
+      background-size: 160px 160px, 300% 300%;
+      background-position: center, calc(50% + var(--tx) * 40%) calc(50% + var(--ty) * 40%);
+      background-blend-mode: screen;
+      mix-blend-mode: color-dodge;
+      opacity: calc(0.08 + var(--hyp) * 0.3);
+      filter: brightness(0.62) contrast(1.5) saturate(1.4);
+    }
+    /* 빛 반사(마우스 쪽이 밝아짐) */
+    .holo-glare {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(farthest-corner circle at calc(50% + var(--tx) * 48%) calc(50% + var(--ty) * 48%), rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.28) 16%, transparent 52%);
+      mix-blend-mode: overlay;
+      opacity: calc(0.25 + var(--hyp) * 0.6);
+    }
+  </style>
+</head>
+<body style="text-align: center;">
+  <!-- 상단 중앙 금문교 사진 (홀로그램 틸트 효과) -->
+  <div class="holo-stage" id="holo-stage">
+    <div class="holo-scene" id="holo-scene">
+      <div class="holo-shadow" aria-hidden="true"></div>
+      <div class="holo-card">
+        <img src="images/golden-gate.jpg" alt="샌프란시스코 금문교(Golden Gate Bridge)" draggable="false">
+        <span class="holo-foil" aria-hidden="true"></span>
+        <span class="holo-glare" aria-hidden="true"></span>
+      </div>
+    </div>
+  </div>
+
+  <h1>안녕하세요!</h1>
+  <p>이것은 제가 만든 첫 번째 웹사이트입니다.</p>
+
+  <!-- My CV 버튼 (링크는 나중에 연결) -->
+  <div class="button-area">
+    <button type="button" class="glow-btn" id="cv-button">
+      <span class="glow-ring" aria-hidden="true"></span>
+      <span class="glow-blur" aria-hidden="true"></span>
+      <span class="glow-inner">
+        <span class="glow-light" aria-hidden="true"></span>
+        <span class="glow-text">My CV</span>
+      </span>
+    </button>
+  </div>
+
+  <!-- 링크 넣기 -->
+  <p>
+    <a href="https://www.naver.com" target="_blank">네이버로 이동하기</a>
+  </p>
+
+  <!-- 마그네틱 글로우 버튼 움직임(JavaScript) -->
+  <script>
+    const button = document.getElementById("cv-button");
+    const inner = button.querySelector(".glow-inner");
+    const strength = 12; // 마우스 쪽으로 끌려가는 최대 거리(px)
+
+    // 마우스가 버튼 위에서 움직일 때: 버튼이 살짝 끌려오고, 빛이 마우스를 따라감
+    button.addEventListener("pointermove", (event) => {
+      const box = button.getBoundingClientRect();
+      const x = (event.clientX - box.left) / box.width;
+      const y = (event.clientY - box.top) / box.height;
+      button.style.transform = `translate(${(x - 0.5) * strength}px, ${(y - 0.5) * strength}px)`;
+      button.style.setProperty("--mx", `${x * 100}%`);
+      button.style.setProperty("--my", `${y * 100}%`);
+    });
+
+    // 마우스가 버튼을 벗어나면 제자리로
+    button.addEventListener("pointerleave", () => {
+      button.style.transform = "translate(0px, 0px)";
+    });
+
+    // 클릭하면 누른 자리에서 물결이 퍼짐
+    button.addEventListener("click", (event) => {
+      const box = button.getBoundingClientRect();
+      const ripple = document.createElement("span");
+      ripple.className = "glow-ripple";
+      ripple.setAttribute("aria-hidden", "true");
+      // 키보드(Enter)로 눌렀을 때는 가운데에서 퍼지게 합니다.
+      const fromKeyboard = event.detail === 0;
+      ripple.style.left = (fromKeyboard ? box.width / 2 : event.clientX - box.left) + "px";
+      ripple.style.top = (fromKeyboard ? box.height / 2 : event.clientY - box.top) + "px";
+      inner.insertBefore(ripple, inner.lastElementChild);
+      setTimeout(() => ripple.remove(), 700);
+    });
+
+    // ===== 홀로그램 틸트 사진 움직임 =====
+    const holoStage = document.getElementById("holo-stage");
+    const holoScene = document.getElementById("holo-scene");
+    const pointer = { x: 0, y: 0, active: false };
+
+    // 마우스 위치를 -1 ~ 1 값으로 바꿉니다. (사진 가운데가 0)
+    holoStage.addEventListener("pointermove", (event) => {
+      const box = holoScene.getBoundingClientRect();
+      pointer.x = Math.max(-1, Math.min(1, (event.clientX - box.left - box.width / 2) / (box.width / 2)));
+      pointer.y = Math.max(-1, Math.min(1, (event.clientY - box.top - box.height / 2) / (box.height / 2)));
+      pointer.active = true;
+    });
+    holoStage.addEventListener("pointerleave", () => { pointer.active = false; });
+
+    // "움직임 줄이기"를 켠 사용자는 사진을 기울이지 않습니다.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (!reduceMotion) {
+      // 스프링: 목표 쪽으로 끌려가다 살짝 지나쳤다 돌아오는 자연스러운 움직임
+      const tiltX = { value: 0, speed: 0 };
+      const tiltY = { value: 0, speed: 0 };
+      function spring(state, target) {
+        state.speed = (state.speed + (target - state.value) * 0.08) * 0.8;
+        state.value += state.speed;
+      }
+
+      let last = performance.now();
+      let elapsed = 0;
+      function loop(now) {
+        const delta = Math.min(48, now - last);
+        last = now;
+        elapsed += delta;
+        const t = elapsed / 1000;
+        // 마우스가 없을 때는 천천히 흔들리며 반짝입니다.
+        const targetX = pointer.active ? pointer.x : Math.sin(t * 0.9) * 0.6;
+        const targetY = pointer.active ? pointer.y : Math.cos(t * 0.65) * 0.38;
+        for (let i = 0; i < Math.max(1, Math.round(delta / 16.7)); i++) {
+          spring(tiltX, targetX);
+          spring(tiltY, targetY);
+        }
+        holoStage.style.setProperty("--tx", tiltX.value.toFixed(4));
+        holoStage.style.setProperty("--ty", tiltY.value.toFixed(4));
+        holoStage.style.setProperty("--hyp", Math.min(1, Math.hypot(tiltX.value, tiltY.value)).toFixed(4));
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+    }
+  </script>
+</body>
+</html>
